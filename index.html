@@ -4,19 +4,20 @@
     <meta charset="UTF-8">
     <title>Ember Image Composer</title>
 
-    <!-->    <script type="text/javascript" src="/vendor/jquery.js"></script>
+    <script type="text/javascript" src="/vendor/jquery.js"></script>
     <script type="text/javascript" src="/vendor/handlebars.js"></script>
     <script type="text/javascript" src="/vendor/ember.js"></script>
-    -->
 
+    <!--
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="http://builds.handlebarsjs.com.s3.amazonaws.com/handlebars-v1.3.0.js"></script>
     <script src="http://builds.emberjs.com/tags/v1.5.1/ember.js"></script>    
+    -->
 
     <style>
       .upload-preview {
-        width: 500px;
-        height: 350px;
+        width: 250px;
+        height: 310px;
         background: #DADADA; 
       }
 
@@ -29,11 +30,13 @@
   <body>
     <script type="text/x-handlebars">
       <div id="preview" class="upload-preview">
-        {{#if previewSource}}
+        {{#if readingImage}}
+          Reading Image...
+        {{else}}
           <img {{bind-attr src="previewSource"}} />
         {{/if}}
       </div>
-      {{image-upload imageSource=previewSource}}
+      {{image-upload imageSource=previewSource isReadingInProgress=readingImage}}
     </script>
 
     <script>
@@ -41,20 +44,33 @@
         LOG_TRANSITIONS: true
       });
 
+
       App.ImageUploadComponent = Ember.TextField.extend({
         type: 'file',
         accept: 'image/*',
         imageSource: null,
+        fileReadingState: null,
+
+        //Can be used to show loading while reading some heavy images
+        isReadingInProgress: function(key, value) {
+          if(arguments.length > 1) { return value;}
+          return this.get('fileReadingState') === 1;
+        }.property('fileReadingState'),
 
         change: function(event) {
           var filesList = event.target.files;
           var self = this;
 
-          if(filesList) {
+          if(filesList && filesList[0]) {
             var fileReader = new FileReader();
             fileReader.readAsDataURL(filesList[0]);
+            this.set('fileReadingState', fileReader.readyState);
+
             fileReader.onload = function(e) {
-              self.set('imageSource', e.target.result);
+              self.setProperties({
+                imageSource: e.target.result,
+                fileReadingState: fileReader.readyState
+              });
             }
           }
         }
